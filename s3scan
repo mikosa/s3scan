@@ -1,0 +1,57 @@
+#!/bin/bash
+
+#Parse Input Variables:
+ENCRYPTION="false"
+while getopts s:t:b:r:c:e:p: option
+do
+case ${option} in
+s) SIZE=${OPTARG};;
+t) TYPE=${OPTARG};;
+b) BUCKETS=${OPTARG};;
+r) REGION=${OPTARG};;
+c) CONTAINS=${OPTARG};;
+p) USER=${OPTARG};;
+e) ENCRYPTION=$OPTARG;;
+esac
+done
+if [ "$USER"="" ] ; then
+    USER="default"
+fi
+
+# prepare query: Bucket "Contain" in name (Need Regex instead)
+if [ "$CONTAINS" != "" ]; then
+    query="?contains(Name, \`$CONTAINS\`) == \`true\`"
+else
+    query=""
+fi
+
+echo "Preparing Bucket List"
+#API list bucket and get region of each then sort by region
+mybucketlist=$(aws s3api list-buckets --profile $USER --query "Buckets[$query].{Name:Name, CreationDate :CreationDate}" --output text \
+    | xargs -n2 -l bash -c 'locator=$(aws s3api get-bucket-location --bucket $1 --query "LocationConstraint" --output text);\
+                            if [ $locator="None" ]; then \
+                            locator="us-east-1";\
+                            fi;\
+                            echo $0" " $1" " $locator; '\
+    | awk '{print substr ($1, 0, 10) " " $2 " " $3}'\
+    | sort $3)
+
+# echo "Calculating list of Regions"
+
+# #get list of regions
+# regions=$(echo "$mybucketlist" | awk '{print $3}' | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
+# echo "Preparing Price list for regions"
+# #build price dictionary for regions selected
+# for regionn in $regions;
+# do 
+# echo "$(convert_region $regionn)" | awk -F "," '{print $1}' | xargs -n1 -I {} bash -c 'sh cost.sh "{}"'
+# done
+ echo "$mybucketlist" | awk '{print $1, $2 }' \
+ |xargs -n2 -P10 -l  bash -c \
+            '\
+            filenum=$(sh b2.sh $1) \
+            && echo  -e "\e[32m $1"  " \e[35m CreationDate $0 \e[91m" "Encryption: $encryptos \e[33m" "$filenum";\
+            '
+
+#aws s3 ls |  awk '{print $3}' | xargs -n1 -P20 -I {} sh -c 'aws s3 ls --recursive {} | wc -l ;'
