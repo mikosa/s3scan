@@ -27,8 +27,9 @@ then copy the files to your user bin folder
 Give the files the power to execute
 ```sh
 $ chmod a+x s3scan
-$ chmod a+x s3scan
-$ chmod a+x s3scan
+$ chmod a+x b2.sh
+$ chmod a+x price.sh
+
 ```
 That is it, you are now ready to start
 make sure that you can contact the aws s3 api using this test command:
