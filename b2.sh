@@ -35,12 +35,17 @@ locator="us-east-1";
 fi
 
 #pricing
-pricelist=($(echo "$(convert_region $locator)" | awk -F "," '{print $1}' | xargs -n1 -I {} bash -c 'sh price.sh "{}"'))
-price_std=${pricelist[4]}
-std_infreq=${pricelist[3]}
-rr=${pricelist[2]}
-onezone=${pricelist[1]}
-glacier=${pricelist[0]}
+# pricelist=($(echo "$(convert_region $locator)" | awk -F "," '{print $1}' | xargs -n1 -I {} bash -c 'sh price.sh "{}"'))
+    # price_std=${pricelist[4]}
+    # std_infreq=${pricelist[3]}
+    # rr=${pricelist[2]}
+    # onezone=${pricelist[1]}
+    # glacier=${pricelist[0]}
+    price_std=0.01
+    std_infreq=0.01
+    rr=0.01
+    onezone=0.01
+    glacier=0.01
 
 #Get Bucket Encryption Status
 encryptor=$(aws s3api get-bucket-encryption --bucket $1 --query "ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm" --output text 2>/dev/null || echo "Absent")
@@ -50,6 +55,7 @@ VersioningStatus=$(aws s3api get-bucket-versioning --bucket $1  --output text)
 if [ "$VersioningStatus" == "" ]; then
 VersioningStatus="Disabled"
 fi
+
 
 #list files, sum memory usage and count file number
 aws s3api list-object-versions \
@@ -71,5 +77,3 @@ aws s3api list-object-versions \
             if (i == "GLACIER") {conv=glacier;type_col=1}
             mem= sum[i]/ 1024 / 1024 /1024" GB"
             print blue(line) ":", red(i) , mem ":" , mem*conv" USD"}}'
-            
-            
