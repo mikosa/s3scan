@@ -21,6 +21,7 @@ You can also:
 S3Scan requires Bash 3.0 or newer. (should work on both windows and linux or ubuntu (not fully tested yet)....)
 
 Clone this repository or download the 3 files
+To run a bash script, you always need to start with command bash or sh or ./ . You can also do the following installation that will allow you to run this without the bash command. 
 To use this script without the sh or bash command, copy the files to the current user bin directory
 ```sh
 $ cd ~
@@ -34,7 +35,10 @@ $ chmod a+x b2.sh
 $ chmod a+x price.sh
 ```
 That is it, you are now ready to start
-make sure that you can contact the aws s3 api using this unit test command (more of an integration test):
+(Make sure you have the aws-cli installed and the authentication stored by using the AWS Configure command)
+
+First let's make sure that you can contact the aws s3 api using this unit test command (more of an integration test). This test will do a head test and will work if you define a bucket.
+
 ```sh
 $ s3scan -t -b 
 ```

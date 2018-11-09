@@ -2,56 +2,78 @@
 
 #Parse Input Variables:
 ENCRYPTION="false"
-while getopts s:t:b:r:c:e:p: option
+while getopts r:f:p:b:u:t: option;
 do
 case ${option} in
-s) SIZE=${OPTARG};;
-t) TYPE=${OPTARG};;
-b) BUCKETS=${OPTARG};;
 r) REGION=${OPTARG};;
-c) CONTAINS=${OPTARG};;
-p) USER=${OPTARG};;
-e) ENCRYPTION=$OPTARG;;
+f) CONTAINS=${OPTARG};;
+p) PROFILE=${OPTARG};;
+b) BUCKET=${OPTARG};;
+u) TEST="true";;
+t) THREADS=${OPTARG};;
 esac
 done
-if [ "$USER"="" ] ; then
-    USER="default"
+
+# number of threads, default =1
+if [ "$THREADS" == "" ] ; then
+    THREADS=1
 fi
 
-# prepare query: Bucket "Contain" in name (Need Regex instead)
+#profile name, default is "default"
+if [ "$PROFILE" == "" ] ; then
+    PROFILE="default"
+fi
+
+# prepare query: Bucket "Contains" in name 
+#To Do: Need Regex instead
+
 if [ "$CONTAINS" != "" ]; then
     query="?contains(Name, \`$CONTAINS\`) == \`true\`"
+    
 else
     query=""
 fi
 
+
+#this is to test the functioning of API
+if [ "$TEST" == "true" ]; then
+    if [ "$BUCKET" == "" ] ; then
+        echo "Please add bucket name after -b ";
+    else
+    echo "Testing ..."
+   if ! (aws s3api head-bucket --bucket $BUCKET --profile $PROFILE); then echo "Check Bucket name, try again..."; exit 1; fi 
+     echo "Success"
+     exit
+    fi
+fi
 echo "Preparing Bucket List"
+
 #API list bucket and get region of each then sort by region
-mybucketlist=$(aws s3api list-buckets --profile $USER --query "Buckets[$query].{Name:Name, CreationDate :CreationDate}" --output text \
+mybucketlist=$(aws s3api list-buckets --profile $PROFILE --query "Buckets[$query].{Name:Name, CreationDate :CreationDate}" --output text \
     | xargs -n2 -l bash -c 'locator=$(aws s3api get-bucket-location --bucket $1 --query "LocationConstraint" --output text);\
-                            if [ $locator="None" ]; then \
+                            if [ "$locator" == "None" ]; then \
                             locator="us-east-1";\
                             fi;\
+                            
                             echo $0" " $1" " $locator; '\
     | awk '{print substr ($1, 0, 10) " " $2 " " $3}'\
     | sort $3)
 
-# echo "Calculating list of Regions"
+echo "Starting bucket analysis using $THREADS thread(s)"
 
-# #get list of regions
-# regions=$(echo "$mybucketlist" | awk '{print $3}' | tr ' ' '\n' | sort -u | tr '\n' ' ')
-
-# echo "Preparing Price list for regions"
-# #build price dictionary for regions selected
-# for regionn in $regions;
-# do 
-# echo "$(convert_region $regionn)" | awk -F "," '{print $1}' | xargs -n1 -I {} bash -c 'sh cost.sh "{}"'
-# done
- echo "$mybucketlist" | awk '{print $1, $2 }' \
- |xargs -n2 -P10 -l  bash -c \
+echo "$mybucketlist" | awk -v region=$REGION '{ if (region == "") {print $1, $2}\
+                                                if (region == $3) {print $1, $2}\
+                                                }' \
+ |xargs -n2 -P$THREADS -l  bash -c \
             '\
             filenum=$(sh b2.sh $1) \
-            && echo  -e "\e[32m $1"  " \e[35m CreationDate $0 \e[91m" "Encryption: $encryptos \e[33m" "$filenum";\
-            '
-
-#aws s3 ls |  awk '{print $3}' | xargs -n1 -P20 -I {} sh -c 'aws s3 ls --recursive {} | wc -l ;'
+            && echo  -e "\e[32m $1: \e[33m $0: \e[34m $filenum";\
+            '\
+ | awk -F: 'BEGIN{
+    print "==================================================================================================================================================================================================================";\
+    printf "%-70s %-20s %-20s %-15s %-15s %-15s %-20s %-20s %-20s \n", "Bucket", "CreationDate", "Region","LastModified", "Encryption", "Versioning", "StorageType", "Memory", "Price"   ;\
+    print "==================================================================================================================================================================================================================";} \
+             {split($0,a,":");} {if( a[10] == "")\
+             {for(i=10;i>1;i--)\
+             { a[i]=a[i-1]; }\
+             }} {printf "%-70s %-20s %-20s %-20s %-15s %-15s %-15s %20s %20s %20s \n", a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10] }'
