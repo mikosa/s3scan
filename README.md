@@ -38,6 +38,23 @@ make sure that you can contact the aws s3 api using this unit test command (more
 ```sh
 $ s3scan -u "true" -b "bucketname"
 ```
+In case you get permission issues, make sure to attach s3 full read permission and you will need at least the following permisssion added:
+```sh
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ce:*"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}
+```
 
 ### Usage and Syntax
 
