@@ -3,7 +3,7 @@
 S3Scan is a bash script running on top of your local aws-cli that will analyse AWS S3 Buckets and help you estimate cost and hopefully decrease your bill. S3Scan is built on top of AWS-CLI using the low level API (s3api) to increase speed and remain lightweight. Some of the benefits of S3Scan are:
 
   - Built on top of a Light weight, Low Level API (S3API)
-  - Supports Multi-Threading, parallel computation to increase the speed of processing
+  - Supports Multi-Threading
   - Color Coding of results
   - Use of AWS-CLI --profile option (-p "String") to easily switch and scan a different AWS account (similar to aws-cli)
   - Detects all versions of files within buckets
